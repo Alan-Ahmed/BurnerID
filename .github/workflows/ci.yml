@@ -32,12 +32,11 @@ jobs:
             ${{ runner.os }}-nuget-
 
       - name: Restore
-        run: dotnet restore ./BurnerID.sln
+        run: dotnet restore
 
       - name: Build (Release)
-        run: dotnet build ./BurnerID.sln -c Release --no-restore
+        run: dotnet build -c Release --no-restore
 
-      # Kör tester bara om det finns testprojekt i repot
       - name: Detect test projects
         id: testdetect
         shell: bash
@@ -50,4 +49,4 @@ jobs:
 
       - name: Test (Release)
         if: steps.testdetect.outputs.found == 'true'
-        run: dotnet test ./BurnerID.sln -c Release --no-build --verbosity normal
+        run: dotnet test -c Release --no-build --verbosity normal
