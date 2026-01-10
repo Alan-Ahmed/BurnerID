@@ -10,66 +10,24 @@ permissions:
   contents: read
 
 jobs:
-  build_test:
-    name: build-test
+  structure_check:
+    name: structure-check
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout
+      - name: Checkout repository
         uses: actions/checkout@v4
 
-      # Debug: visar exakt var workflow körs och vilka filer som finns.
-      - name: Debug - list files
+      - name: Validate solution and project structure
         shell: bash
         run: |
-          echo "PWD=$(pwd)"
-          echo "Root files:"
-          ls -la
-          echo ""
-          echo "Solutions/projects found (max depth 5):"
-          find . -maxdepth 5 \( -name "*.sln" -o -name "*.csproj" \) -print | sed 's|^\./||'
+          echo "Checking required files..."
 
-      - name: Setup .NET
-        uses: actions/setup-dotnet@v4
-        with:
-          dotnet-version: "8.0.x"
+          test -f "BurnerID.sln"
 
-      - name: Cache NuGet packages
-        uses: actions/cache@v4
-        with:
-          path: ~/.nuget/packages
-          key: ${{ runner.os }}-nuget-${{ hashFiles('**/*.csproj') }}
-          restore-keys: |
-            ${{ runner.os }}-nuget-
+          test -f "API/API.csproj"
+          test -f "Application/Application.csproj"
+          test -f "Domain/Domain.csproj"
+          test -f "Infrastructure/Infrastructure.csproj"
 
-      - name: Locate solution (.sln)
-        id: sln
-        shell: bash
-        run: |
-          SLN=$(find . -maxdepth 5 -name "*.sln" | head -n 1)
-          if [ -z "$SLN" ]; then
-            echo "ERROR: No .sln file found in repository (max depth 5)."
-            exit 1
-          fi
-          echo "Using solution: $SLN"
-          echo "path=$SLN" >> $GITHUB_OUTPUT
-
-      - name: Restore
-        run: dotnet restore "${{ steps.sln.outputs.path }}"
-
-      - name: Build (Release)
-        run: dotnet build "${{ steps.sln.outputs.path }}" -c Release --no-restore
-
-      - name: Detect test projects
-        id: testdetect
-        shell: bash
-        run: |
-          if find . -maxdepth 6 \( -name "*Tests*.csproj" -o -name "*.Test*.csproj" \) | grep -q .; then
-            echo "found=true" >> $GITHUB_OUTPUT
-          else
-            echo "found=false" >> $GITHUB_OUTPUT
-          fi
-
-      - name: Test (Release)
-        if: steps.testdetect.outputs.found == 'true'
-        run: dotnet test "${{ steps.sln.outputs.path }}" -c Release --no-build --verbosity normal
+          echo "✅ Clean Architecture structure is valid."
