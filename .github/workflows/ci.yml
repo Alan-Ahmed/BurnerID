@@ -18,6 +18,17 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      # Debug: visar exakt var workflow körs och vilka filer som finns.
+      - name: Debug - list files
+        shell: bash
+        run: |
+          echo "PWD=$(pwd)"
+          echo "Root files:"
+          ls -la
+          echo ""
+          echo "Solutions/projects found (max depth 5):"
+          find . -maxdepth 5 \( -name "*.sln" -o -name "*.csproj" \) -print | sed 's|^\./||'
+
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
         with:
@@ -31,17 +42,29 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-nuget-
 
+      - name: Locate solution (.sln)
+        id: sln
+        shell: bash
+        run: |
+          SLN=$(find . -maxdepth 5 -name "*.sln" | head -n 1)
+          if [ -z "$SLN" ]; then
+            echo "ERROR: No .sln file found in repository (max depth 5)."
+            exit 1
+          fi
+          echo "Using solution: $SLN"
+          echo "path=$SLN" >> $GITHUB_OUTPUT
+
       - name: Restore
-        run: dotnet restore
+        run: dotnet restore "${{ steps.sln.outputs.path }}"
 
       - name: Build (Release)
-        run: dotnet build -c Release --no-restore
+        run: dotnet build "${{ steps.sln.outputs.path }}" -c Release --no-restore
 
       - name: Detect test projects
         id: testdetect
         shell: bash
         run: |
-          if ls **/*Tests*.csproj 1> /dev/null 2>&1 || ls **/*.Test*.csproj 1> /dev/null 2>&1; then
+          if find . -maxdepth 6 \( -name "*Tests*.csproj" -o -name "*.Test*.csproj" \) | grep -q .; then
             echo "found=true" >> $GITHUB_OUTPUT
           else
             echo "found=false" >> $GITHUB_OUTPUT
@@ -49,4 +72,4 @@ jobs:
 
       - name: Test (Release)
         if: steps.testdetect.outputs.found == 'true'
-        run: dotnet test -c Release --no-build --verbosity normal
+        run: dotnet test "${{ steps.sln.outputs.path }}" -c Release --no-build --verbosity normal
