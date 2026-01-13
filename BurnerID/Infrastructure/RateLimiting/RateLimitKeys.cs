@@ -1,12 +1,7 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿namespace Infrastructure.RateLimiting;
 
-namespace Infrastructure.RateLimiting
+public static class RateLimitKeys
 {
-    internal class RateLimitKeys
-    {
-    }
+    public static string Ip(string ip) => $"ip:{ip}";
+    public static string User(string userId) => $"user:{userId}";
 }
