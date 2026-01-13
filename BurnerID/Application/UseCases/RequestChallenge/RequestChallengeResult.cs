@@ -1,12 +1,5 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using Application.Dtos;
 
-namespace Application.UseCases.RequestChallenge
-{
-    internal class RequestChallengeResult
-    {
-    }
-}
+namespace Application.UseCases.RequestChallenge;
+
+public sealed record RequestChallengeResult(ChallengeDto Challenge);

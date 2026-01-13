@@ -1,12 +1,9 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using Domain.ValueObjects;
 
-namespace Application.Contracts
+namespace Application.Contracts;
+
+public interface IRateLimiter
 {
-    internal interface IRateLimiter
-    {
-    }
+    Task<bool> AllowIpAsync(string ip, CancellationToken ct);
+    Task<bool> AllowUserAsync(UserId userId, CancellationToken ct);
 }

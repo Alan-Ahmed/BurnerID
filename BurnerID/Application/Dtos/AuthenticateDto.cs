@@ -1,12 +1,7 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿namespace Application.Dtos;
 
-namespace Application.Dtos
-{
-    internal class AuthenticateDto
-    {
-    }
-}
+public sealed record AuthenticateDto(
+    string UserId,
+    string ChallengeId,
+    string PublicKeyBase64Url,
+    string SignatureBase64Url);
