@@ -1,12 +1,3 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿namespace Application.UseCases.SendEnvelope;
 
-namespace Application.UseCases.SendEnvelope
-{
-    internal class SendEnvelopeResult
-    {
-    }
-}
+public sealed record SendEnvelopeResult(string EnvelopeId, bool Delivered);

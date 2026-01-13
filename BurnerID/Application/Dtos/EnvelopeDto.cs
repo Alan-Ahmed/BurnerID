@@ -1,12 +1,9 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿namespace Application.Dtos;
 
-namespace Application.Dtos
-{
-    internal class EnvelopeDto
-    {
-    }
-}
+public sealed record EnvelopeDto(
+    string EnvelopeId,
+    string FromUserId,
+    string ToUserId,
+    string CiphertextBase64Url,
+    string? ContentType,
+    string? AlgoVersion);

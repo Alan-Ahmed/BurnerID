@@ -1,12 +1,9 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using Domain.Models;
+using Domain.ValueObjects;
 
-namespace Application.Contracts
+namespace Application.Contracts;
+
+public interface IEnvelopeRouter
 {
-    internal interface IEnvelopeRouter
-    {
-    }
+    Task DeliverAsync(UserId recipient, Envelope envelope, CancellationToken ct);
 }

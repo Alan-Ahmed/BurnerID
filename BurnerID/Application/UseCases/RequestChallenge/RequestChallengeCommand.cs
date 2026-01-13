@@ -1,12 +1,3 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿namespace Application.UseCases.RequestChallenge;
 
-namespace Application.UseCases.RequestChallenge
-{
-    internal class RequestChallengeCommand
-    {
-    }
-}
+public sealed record RequestChallengeCommand(string UserId);

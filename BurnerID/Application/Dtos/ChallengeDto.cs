@@ -1,12 +1,7 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿namespace Application.Dtos;
 
-namespace Application.Dtos
-{
-    internal class ChallengeDto
-    {
-    }
-}
+public sealed record ChallengeDto(
+    string UserId,
+    string ChallengeId,
+    string NonceBase64Url,
+    DateTimeOffset ExpiresAtUtc);

@@ -1,12 +1,8 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿namespace Application.Common.Abstractions;
 
-namespace Application.Common.Abstractions
+public interface IPrivacySafeLogger
 {
-    internal interface IPrivacySafeLogger
-    {
-    }
+    void Info(string messageTemplate, params object[] args);
+    void Warn(string messageTemplate, params object[] args);
+    void Error(Exception ex, string messageTemplate, params object[] args);
 }
