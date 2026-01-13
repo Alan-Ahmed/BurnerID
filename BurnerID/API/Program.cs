@@ -1,25 +1,32 @@
+using API.Adapters;
+using API.Extensions;
+using API.Hubs;
+using API.Hubs.Filters;
+using Application.Contracts;
+using Microsoft.AspNetCore.SignalR;
+
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container.
+builder.Services.AddLocalDevCors(builder.Configuration);
+builder.Services.AddSignalRWithFilters();
 
-builder.Services.AddControllers();
-// Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
-builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
+// Hub filters
+builder.Services.AddSingleton<RequireAuthenticatedFilter>();
+builder.Services.AddSingleton<RateLimitSendEnvelopeFilter>();
+builder.Services.AddSingleton<IHubFilter>(sp => sp.GetRequiredService<RequireAuthenticatedFilter>());
+builder.Services.AddSingleton<IHubFilter>(sp => sp.GetRequiredService<RateLimitSendEnvelopeFilter>());
+
+builder.Services.AddAppServices(builder.Configuration);
+
+// Bind router implementation (API adapter)
+builder.Services.AddSingleton<IEnvelopeRouter, SignalREnvelopeRouter>();
 
 var app = builder.Build();
 
-// Configure the HTTP request pipeline.
-if (app.Environment.IsDevelopment())
-{
-    app.UseSwagger();
-    app.UseSwaggerUI();
-}
+app.UseAppMiddleware();
+app.UseRouting();
+app.UseLocalDevCors();
 
-app.UseHttpsRedirection();
-
-app.UseAuthorization();
-
-app.MapControllers();
+app.MapHub<ChatHub>("/chat");
 
 app.Run();
