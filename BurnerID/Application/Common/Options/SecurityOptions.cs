@@ -1,12 +1,6 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿namespace Application.Common.Options;
 
-namespace Application.Common.Options
+public sealed class SecurityOptions
 {
-    internal class SecurityOptions
-    {
-    }
+    public int ChallengeTtlSeconds { get; init; } = 60;
 }

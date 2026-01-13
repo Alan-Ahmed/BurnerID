@@ -1,12 +1,6 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿namespace Application.Contracts;
 
-namespace Application.Contracts
+public interface ICryptoVerifier
 {
-    internal interface ICryptoVerifier
-    {
-    }
+    bool VerifyEd25519(ReadOnlySpan<byte> publicKeyBytes, ReadOnlySpan<byte> messageBytes, ReadOnlySpan<byte> signatureBytes);
 }

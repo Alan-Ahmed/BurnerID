@@ -1,12 +1,6 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿namespace Domain.Common;
 
-namespace Domain.Common
+public sealed class DomainException : Exception
 {
-    internal class DomainException
-    {
-    }
+    public DomainException(string message) : base(message) { }
 }

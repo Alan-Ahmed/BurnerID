@@ -1,12 +1,8 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿namespace Application.UseCases.AuthenticateConnection;
 
-namespace Application.UseCases.AuthenticateConnection
-{
-    internal class AuthenticateConnectionCommand
-    {
-    }
-}
+public sealed record AuthenticateConnectionCommand(
+    string ConnectionId,
+    string UserId,
+    string ChallengeId,
+    string PublicKeyBase64Url,
+    string SignatureBase64Url);

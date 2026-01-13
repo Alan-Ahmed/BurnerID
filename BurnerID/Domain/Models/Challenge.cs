@@ -1,12 +1,19 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using Domain.Common;
 
-namespace Domain.Models
+namespace Domain.Models;
+
+public sealed class Challenge
 {
-    internal class Challenge
+    public string ChallengeId { get; }
+    public byte[] Nonce { get; }
+    public DateTimeOffset ExpiresAt { get; }
+
+    public Challenge(string challengeId, byte[] nonce, DateTimeOffset expiresAt)
     {
+        ChallengeId = Guard.NotNullOrWhiteSpace(challengeId, nameof(challengeId));
+        Nonce = Guard.NotNullOrEmpty(nonce, nameof(nonce));
+        ExpiresAt = expiresAt;
     }
+
+    public bool IsExpired(DateTimeOffset now) => now >= ExpiresAt;
 }

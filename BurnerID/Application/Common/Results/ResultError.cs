@@ -1,12 +1,3 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿namespace Application.Common.Results;
 
-namespace Application.Common.Results
-{
-    internal class ResultError
-    {
-    }
-}
+public sealed record ResultError(string Code, string Message);

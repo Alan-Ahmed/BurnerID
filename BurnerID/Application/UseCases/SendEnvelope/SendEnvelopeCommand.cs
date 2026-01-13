@@ -1,12 +1,5 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using Application.Dtos;
 
-namespace Application.UseCases.SendEnvelope
-{
-    internal class SendEnvelopeCommand
-    {
-    }
-}
+namespace Application.UseCases.SendEnvelope;
+
+public sealed record SendEnvelopeCommand(string ConnectionId, string SenderUserId, EnvelopeDto Envelope, string Ip);
