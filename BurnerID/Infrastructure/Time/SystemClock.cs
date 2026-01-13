@@ -1,12 +1,8 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using Application.Common.Abstractions;
 
-namespace Infrastructure.Time
+namespace Infrastructure.Time;
+
+public sealed class SystemClock : IClock
 {
-    internal class SystemClock
-    {
-    }
+    public DateTimeOffset UtcNow => DateTimeOffset.UtcNow;
 }

@@ -1,12 +1,15 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿namespace Infrastructure.Stores.Expiration;
 
-namespace Infrastructure.Stores.Expiration
+public sealed class ExpiringItem<T>
 {
-    internal class ExpiringItem
+    public T Value { get; }
+    public DateTimeOffset ExpiresAt { get; }
+
+    public ExpiringItem(T value, DateTimeOffset expiresAt)
     {
+        Value = value;
+        ExpiresAt = expiresAt;
     }
+
+    public bool IsExpired(DateTimeOffset now) => now >= ExpiresAt;
 }
