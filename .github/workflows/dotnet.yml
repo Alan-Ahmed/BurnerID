@@ -1,0 +1,38 @@
+name: BurnerID CI
+
+on:
+  push:
+    branches: [ "main", "feature/*" ] # Körs på main OCH din feature-branch
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  build-and-test:
+    name: Build & Test Backend
+    runs-on: ubuntu-latest
+
+    # VIKTIGT: Detta säger åt GitHub att jobba i undermappen där din .sln finns
+    defaults:
+      run:
+        working-directory: ./BurnerID
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Setup .NET 8
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: 8.0.x
+        
+    - name: Restore dependencies
+      run: dotnet restore
+
+    - name: Build
+      # Bygger projektet i Release-läge för att se att inga kompileringsfel finns
+      run: dotnet build --no-restore --configuration Release
+
+    - name: Run Unit Tests
+      # Detta är det viktigaste steget!
+      # Den kör alla tester vi skrev (RequestChallenge, Authenticate, SendEnvelope).
+      # Om detta steg blir grönt är din backend 100% säkrad.
+      run: dotnet test --no-build --configuration Release --verbosity normal
