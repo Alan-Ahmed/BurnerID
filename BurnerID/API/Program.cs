@@ -7,6 +7,10 @@ using Microsoft.AspNetCore.SignalR;
 
 var builder = WebApplication.CreateBuilder(args);
 
+// 1. LÄGG TILL DESSA FÖR ATT AKTIVERA SWAGGER-TJÄNSTEN
+builder.Services.AddEndpointsApiExplorer(); // <---
+builder.Services.AddSwaggerGen();           // <---
+
 builder.Services.AddLocalDevCors(builder.Configuration);
 builder.Services.AddSignalRWithFilters();
 
@@ -17,11 +21,16 @@ builder.Services.AddSingleton<IHubFilter>(sp => sp.GetRequiredService<RequireAut
 builder.Services.AddSingleton<IHubFilter>(sp => sp.GetRequiredService<RateLimitSendEnvelopeFilter>());
 
 builder.Services.AddAppServices(builder.Configuration);
-
-// Bind router implementation (API adapter)
 builder.Services.AddSingleton<IEnvelopeRouter, SignalREnvelopeRouter>();
 
 var app = builder.Build();
+
+// 2. LÄGG TILL DETTA FÖR ATT VISA SIDAN I UTVECKLINGSLÄGE
+if (app.Environment.IsDevelopment()) // <---
+{
+    app.UseSwagger();   // <--- Genererar JSON-filen
+    app.UseSwaggerUI(); // <--- Genererar den grafiska webbsidan
+}
 
 app.UseAppMiddleware();
 app.UseRouting();
