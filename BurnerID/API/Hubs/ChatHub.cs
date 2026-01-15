@@ -3,6 +3,7 @@ using API.Dtos.Requests;
 using API.Dtos.Responses;
 using API.Hubs.Contracts;
 using Application.Common.Abstractions;
+using Application.Contracts;
 using Application.Dtos;
 using Application.UseCases.AuthenticateConnection;
 using Application.UseCases.RequestChallenge;
@@ -43,14 +44,20 @@ public sealed class ChatHub : Hub
 
     public override async Task OnDisconnectedAsync(Exception? exception)
     {
-        await _connections.UnregisterByConnectionIdAsync(Context.ConnectionId, Context.ConnectionAborted);
+        await _connections.UnregisterByConnectionIdAsync(
+            Context.ConnectionId,
+            Context.ConnectionAborted);
+
         _log.Info("WS disconnected connectionId={0}", Context.ConnectionId);
         await base.OnDisconnectedAsync(exception);
     }
 
     public async Task<ChallengeIssuedResponse> RequestChallenge(RequestChallengeRequest req)
     {
-        var result = await _requestChallenge.Handle(new RequestChallengeCommand(req.UserId), Context.ConnectionAborted);
+        var result = await _requestChallenge.Handle(
+            new RequestChallengeCommand(req.UserId),
+            Context.ConnectionAborted);
+
         if (!result.IsSuccess || result.Value is null)
             throw new HubException(result.Error?.Code ?? "error");
 
@@ -71,19 +78,26 @@ public sealed class ChatHub : Hub
             SignatureBase64Url: req.SignatureBase64Url);
 
         var result = await _authenticate.Handle(cmd, Context.ConnectionAborted);
+
         if (!result.IsSuccess || result.Value is null)
             throw new HubException(result.Error?.Code ?? "error");
 
-        return new AuthenticatedResponse(result.Value.UserId, result.Value.Authenticated);
+        return new AuthenticatedResponse(
+            result.Value.UserId,
+            result.Value.Authenticated);
     }
 
     public async Task<object> SendEnvelope(SendEnvelopeRequest req)
     {
-        var authed = await _connections.GetAuthenticatedUserAsync(Context.ConnectionId, Context.ConnectionAborted);
+        var authed = await _connections.GetAuthenticatedUserAsync(
+            Context.ConnectionId,
+            Context.ConnectionAborted);
+
         if (authed is null)
             throw new HubException("unauthorized");
 
-        var ip = Context.GetHttpContext()?.Connection.RemoteIpAddress?.ToString() ?? "unknown";
+        var ip = Context.GetHttpContext()?.Connection.RemoteIpAddress?.ToString()
+                 ?? "unknown";
 
         var dto = new EnvelopeDto(
             EnvelopeId: req.EnvelopeId,
@@ -93,12 +107,21 @@ public sealed class ChatHub : Hub
             ContentType: req.ContentType,
             AlgoVersion: req.AlgoVersion);
 
-        var cmd = new SendEnvelopeCommand(Context.ConnectionId, authed.Value.Value, dto, ip);
+        var cmd = new SendEnvelopeCommand(
+            Context.ConnectionId,
+            authed.Value.Value,
+            dto,
+            ip);
 
         var result = await _sendEnvelope.Handle(cmd, Context.ConnectionAborted);
+
         if (!result.IsSuccess || result.Value is null)
             throw new HubException(result.Error?.Code ?? "error");
 
-        return new { envelopeId = result.Value.EnvelopeId, delivered = result.Value.Delivered };
+        return new
+        {
+            envelopeId = result.Value.EnvelopeId,
+            delivered = result.Value.Delivered
+        };
     }
 }
