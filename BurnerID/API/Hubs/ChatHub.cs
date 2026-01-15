@@ -9,6 +9,7 @@ using Application.UseCases.RequestChallenge;
 using Application.UseCases.SendEnvelope;
 using Domain.ValueObjects;
 using Microsoft.AspNetCore.SignalR;
+using Application.Contracts;
 
 namespace API.Hubs;
 
@@ -56,7 +57,7 @@ public sealed class ChatHub : Hub
         // Register connection to user immediately (even before auth) for demo UX
         await _connections.RegisterAsync(UserId.From(req.UserId), Context.ConnectionId, Context.ConnectionAborted);
 
-        var c = result.Value.Challenge.Challenge;
+        var c = result.Value.Challenge;
         return new ChallengeIssuedResponse(c.UserId, c.ChallengeId, c.NonceBase64Url, c.ExpiresAtUtc);
     }
 
