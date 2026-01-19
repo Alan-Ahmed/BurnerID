@@ -10,7 +10,6 @@ using Application.UseCases.RequestChallenge;
 using Application.UseCases.SendEnvelope;
 using Domain.ValueObjects;
 using Microsoft.AspNetCore.SignalR;
-using Application.Contracts;
 
 namespace API.Hubs;
 
