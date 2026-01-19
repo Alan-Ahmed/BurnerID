@@ -7,35 +7,63 @@ using Microsoft.AspNetCore.SignalR;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// 1. LÄGG TILL DESSA FÖR ATT AKTIVERA SWAGGER-TJÄNSTEN
-builder.Services.AddEndpointsApiExplorer(); // <---
-builder.Services.AddSwaggerGen();           // <---
+// --- 1. SWAGGER & API ---
+builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddSwaggerGen();
 
-builder.Services.AddLocalDevCors(builder.Configuration);
-builder.Services.AddSignalRWithFilters();
+// --- 2. CORS (DÖRRVAKTEN) ---
+// Vi lägger in konfigurationen direkt här så vi vet att den fungerar.
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowAll",
+        policy =>
+        {
+            policy.SetIsOriginAllowed(origin => true) // Tillåter din Frontend (localhost)
+                  .AllowAnyHeader()
+                  .AllowAnyMethod()
+                  .AllowCredentials(); // <--- DETTA ÄR KRITISKT FÖR SIGNALR
+        });
+});
 
-// Hub filters
+// --- 3. SIGNALR & FILTER ---
+// Vi lägger till SignalR och registrerar dina filter
+builder.Services.AddSignalR(options =>
+{
+    // Registrerar filtren globalt för hubben
+    options.AddFilter<RequireAuthenticatedFilter>();
+    options.AddFilter<RateLimitSendEnvelopeFilter>();
+});
+
+// Registrera filtren i DI-containern
 builder.Services.AddSingleton<RequireAuthenticatedFilter>();
 builder.Services.AddSingleton<RateLimitSendEnvelopeFilter>();
-builder.Services.AddSingleton<IHubFilter>(sp => sp.GetRequiredService<RequireAuthenticatedFilter>());
-builder.Services.AddSingleton<IHubFilter>(sp => sp.GetRequiredService<RateLimitSendEnvelopeFilter>());
 
+// --- 4. APP SERVICES ---
 builder.Services.AddAppServices(builder.Configuration);
 builder.Services.AddSingleton<IEnvelopeRouter, SignalREnvelopeRouter>();
 
 var app = builder.Build();
 
-// 2. LÄGG TILL DETTA FÖR ATT VISA SIDAN I UTVECKLINGSLÄGE
-if (app.Environment.IsDevelopment()) // <---
+// --- 5. MIDDLEWARE PIPELINE ---
+
+if (app.Environment.IsDevelopment())
 {
-    app.UseSwagger();   // <--- Genererar JSON-filen
-    app.UseSwaggerUI(); // <--- Genererar den grafiska webbsidan
+    app.UseSwagger();
+    app.UseSwaggerUI();
 }
 
+// Om du har anpassad middleware i denna extension, kör den här.
+// Om den krockar med något, prova att kommentera ut den tillfälligt.
 app.UseAppMiddleware();
-app.UseRouting();
-app.UseLocalDevCors();
 
-app.MapHub<ChatHub>("/chat");
+app.UseRouting();
+
+// --- 6. AKTIVERA CORS ---
+// Detta måste ligga mellan UseRouting och MapHub
+app.UseCors("AllowAll");
+
+// --- 7. ENDPOINTS ---
+// OBS: Vi använder "/burn" för att matcha Frontend-prompten!
+app.MapHub<ChatHub>("/burn");
 
 app.Run();
