@@ -49,10 +49,16 @@ public sealed class AuthenticateConnectionHandler
         if (challenge.IsExpired(_clock.UtcNow))
             return Result<AuthenticateConnectionResult>.Fail(ErrorCodes.Unauthorized, "challenge expired.");
 
+        // Avkoda strängarna till bytes
         var pubKey = Base64UrlDecode(cmd.PublicKeyBase64Url);
         var sig = Base64UrlDecode(cmd.SignatureBase64Url);
 
-        var ok = _crypto.VerifyEd25519(pubKey, challenge.Nonce, sig);
+        // --- HÄR VAR FELET ---
+        // Tidigare: _crypto.VerifyEd25519(pubKey, challenge.Nonce, sig);
+        // Rätt ordning för din Verifier är: (Message, Signature, PublicKey)
+
+        var ok = _crypto.VerifyEd25519(challenge.Nonce, sig, pubKey);
+
         if (!ok)
             return Result<AuthenticateConnectionResult>.Fail(ErrorCodes.Unauthorized, "invalid signature.");
 
