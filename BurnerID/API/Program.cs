@@ -8,65 +8,59 @@ using Microsoft.AspNetCore.SignalR;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// --- 1. SWAGGER & API ---
+// --- 1. API EXPLORER (BehÃ¶vs fÃ¶r minimal APIs, Swagger borttagen) ---
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
 
-// --- 2. CORS (DÖRRVAKTEN) ---
+// --- 2. CORS (DÃ–RRVAKTEN) ---
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowAll",
         policy =>
         {
-            policy.SetIsOriginAllowed(origin => true) // Tillåter din Frontend (localhost)
+            // TillÃ¥ter bÃ¥de lokal utveckling och din skarpa Netlify-sida
+            policy.WithOrigins(
+                    "http://localhost:5173", 
+                    "https://luxury-bublanina-733452.netlify.app"
+                  )
                   .AllowAnyHeader()
                   .AllowAnyMethod()
-                  .AllowCredentials(); // <--- DETTA ÄR KRITISKT FÖR SIGNALR
+                  .AllowCredentials(); // <--- KRITISKT FÃ–R SIGNALR
         });
 });
 
 // --- 3. SIGNALR & FILTER ---
 builder.Services.AddSignalR(options =>
 {
-    // --- HÄR ÄR ÄNDRINGEN! ---
-    // Vi har satt "//" framför raderna nedan för att stänga av filtren tillfälligt.
-    // Detta gör att du slipper "Unauthorized"-felet och kan logga in.
-
+    // Filtren Ã¤r tillfÃ¤lligt inaktiverade enligt din kommentar fÃ¶r att undvika "Unauthorized"
     // options.AddFilter<RequireAuthenticatedFilter>();
     // options.AddFilter<RateLimitSendEnvelopeFilter>();
 });
 
-// Registrera filtren i DI-containern (Dessa kan vara kvar, de gör ingen skada här)
+// Registrera filtren i DI-containern
 builder.Services.AddSingleton<RequireAuthenticatedFilter>();
 builder.Services.AddSingleton<RateLimitSendEnvelopeFilter>();
 
 // --- 4. APP SERVICES ---
 builder.Services.AddAppServices(builder.Configuration);
 
-// Routingen för kuvert
+// Routingen fÃ¶r kuvert
 builder.Services.AddSingleton<IEnvelopeRouter, SignalREnvelopeRouter>();
 
 var app = builder.Build();
 
 // --- 5. MIDDLEWARE PIPELINE ---
 
-if (app.Environment.IsDevelopment())
-{
-    app.UseSwagger();
-    app.UseSwaggerUI();
-}
-
-// Din custom middleware
+// Custom middleware
 app.UseAppMiddleware();
 
 app.UseRouting();
 
 // --- 6. AKTIVERA CORS ---
-// Måste ligga mellan UseRouting och MapHub
+// MÃ¥ste ligga mellan UseRouting och MapHub
 app.UseCors("AllowAll");
 
 // --- 7. ENDPOINTS ---
-// Vi kopplar "/burn" till din nya BurnHub.
+// Vi kopplar "/burn" till BurnHub.
 app.MapHub<BurnHub>("/burn");
 
 app.Run();
