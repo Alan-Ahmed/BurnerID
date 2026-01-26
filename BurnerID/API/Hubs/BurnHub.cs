@@ -1,10 +1,10 @@
-﻿using Microsoft.AspNetCore.SignalR;
+using Microsoft.AspNetCore.SignalR;
 using System.Threading.Tasks;
 using System;
 
-namespace BurnerBackend.Hubs // <-- VIKTIGT: Behåll ditt namespace om det heter något annat!
+namespace BurnerBackend.Hubs 
 {
-    // Denna klass måste matcha datan som skickas från React
+    // Uppdaterad DTO som nu inkluderar timer för radering
     public class EnvelopeDto
     {
         public string EnvelopeId { get; set; }
@@ -13,38 +13,58 @@ namespace BurnerBackend.Hubs // <-- VIKTIGT: Behåll ditt namespace om det heter
         public string CiphertextBase64Url { get; set; }
         public string ContentType { get; set; }
         public string AlgoVersion { get; set; }
+        
+        // NYTT: Denna låter frontend berätta hur länge meddelandet ska leva (i sekunder)
+        public int? BurnAfterSeconds { get; set; }
     }
 
     public class BurnHub : Hub
     {
-        // 1. Inloggning: Kopplar ihop användarens ID med SignalR-uppkopplingen
+        // 1. Inloggning
         public async Task<string> JoinIdentity(string userId)
         {
-            // Vi skapar en "Grupp" med namnet på användarens ID.
-            // Detta gör att vi senare kan skicka meddelanden till "ghost-1234".
             await Groups.AddToGroupAsync(Context.ConnectionId, userId);
-
             Console.WriteLine($"[HUB] User joined: {userId} (ConnectionId: {Context.ConnectionId})");
-
-            // Returnera en "utmaning" (används inte på riktigt än, men krävs av frontend)
             return Guid.NewGuid().ToString();
         }
 
-        // 2. Verifiering: Frontend bekräftar att den är redo
+        // 2. Verifiering
         public async Task<bool> VerifyIdentity(string userId, string signature)
         {
             Console.WriteLine($"[HUB] User verified: {userId}");
-            return true; // Vi godkänner alla just nu
+            return true;
         }
 
-        // 3. Skicka meddelande: Tar emot från avsändaren och skickar till mottagaren
+        // 3. Skicka meddelande + Hantera Timer
         public async Task SendEnvelope(EnvelopeDto env)
         {
-            Console.WriteLine($"[HUB] Message from {env.FromUserId} to {env.ToUserId}");
+            Console.WriteLine($"[HUB] Message from {env.FromUserId} to {env.ToUserId}. Burn: {env.BurnAfterSeconds}s");
 
-            // Skicka meddelandet BARA till den specifika mottagaren (Group)
-            // Metodnamnet "ReceiveEnvelope" måste matcha det vi lyssnar på i React (signalr.ts)
+            // A. Skicka meddelandet till mottagaren direkt
             await Clients.Group(env.ToUserId).SendAsync("ReceiveEnvelope", env);
+
+            // B. Om det finns en timer: Vänta och radera sedan för ALLA
+            if (env.BurnAfterSeconds.HasValue && env.BurnAfterSeconds.Value > 0)
+            {
+                // Vi startar en bakgrundsprocess som inte blockerar resten av servern
+                _ = Task.Delay(env.BurnAfterSeconds.Value * 1000).ContinueWith(async _ =>
+                {
+                    try 
+                    {
+                        // Skicka "DeleteEnvelope" till mottagaren
+                        await Clients.Group(env.ToUserId).SendAsync("DeleteEnvelope", env.EnvelopeId);
+                        
+                        // Skicka "DeleteEnvelope" till avsändaren (så det försvinner för dig också)
+                        await Clients.Group(env.FromUserId).SendAsync("DeleteEnvelope", env.EnvelopeId);
+                        
+                        Console.WriteLine($"[HUB] Burned message {env.EnvelopeId}");
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine($"[HUB] Error burning message: {ex.Message}");
+                    }
+                });
+            }
         }
     }
 }
