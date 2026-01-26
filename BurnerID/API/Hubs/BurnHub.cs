@@ -2,9 +2,8 @@ using Microsoft.AspNetCore.SignalR;
 using System.Threading.Tasks;
 using System;
 
-namespace BurnerBackend.Hubs 
+namespace BurnerBackend.Hubs
 {
-    // Uppdaterad DTO som nu inkluderar timer för radering
     public class EnvelopeDto
     {
         public string EnvelopeId { get; set; }
@@ -13,14 +12,20 @@ namespace BurnerBackend.Hubs
         public string CiphertextBase64Url { get; set; }
         public string ContentType { get; set; }
         public string AlgoVersion { get; set; }
-        
-        // NYTT: Denna låter frontend berätta hur länge meddelandet ska leva (i sekunder)
         public int? BurnAfterSeconds { get; set; }
     }
 
     public class BurnHub : Hub
     {
-        // 1. Inloggning
+        // Vi sparar en referens till "Context" som lever för evigt (Singleton)
+        private readonly IHubContext<BurnHub> _hubContext;
+
+        // DI-containern injicerar contexten här automatiskt
+        public BurnHub(IHubContext<BurnHub> hubContext)
+        {
+            _hubContext = hubContext;
+        }
+
         public async Task<string> JoinIdentity(string userId)
         {
             await Groups.AddToGroupAsync(Context.ConnectionId, userId);
@@ -28,35 +33,38 @@ namespace BurnerBackend.Hubs
             return Guid.NewGuid().ToString();
         }
 
-        // 2. Verifiering
         public async Task<bool> VerifyIdentity(string userId, string signature)
         {
             Console.WriteLine($"[HUB] User verified: {userId}");
             return true;
         }
 
-        // 3. Skicka meddelande + Hantera Timer
         public async Task SendEnvelope(EnvelopeDto env)
         {
-            Console.WriteLine($"[HUB] Message from {env.FromUserId} to {env.ToUserId}. Burn: {env.BurnAfterSeconds}s");
+            // Logga vad som händer (Visar nu "10s" eller "0s")
+            var burnText = env.BurnAfterSeconds.HasValue ? $"{env.BurnAfterSeconds}s" : "No burn";
+            Console.WriteLine($"[HUB] Message from {env.FromUserId} to {env.ToUserId}. Burn: {burnText}");
 
-            // A. Skicka meddelandet till mottagaren direkt
+            // 1. Skicka meddelandet via den vanliga "Clients" (den lever just nu)
             await Clients.Group(env.ToUserId).SendAsync("ReceiveEnvelope", env);
 
-            // B. Om det finns en timer: Vänta och radera sedan för ALLA
+            // 2. Starta bakgrundstimer (om timer finns)
             if (env.BurnAfterSeconds.HasValue && env.BurnAfterSeconds.Value > 0)
             {
-                // Vi startar en bakgrundsprocess som inte blockerar resten av servern
-                _ = Task.Delay(env.BurnAfterSeconds.Value * 1000).ContinueWith(async _ =>
+                // Vi använder Task.Run för att släppa loss tråden helt från Hubben
+                _ = Task.Run(async () =>
                 {
-                    try 
+                    // Vänta i X sekunder
+                    await Task.Delay(env.BurnAfterSeconds.Value * 1000);
+
+                    try
                     {
-                        // Skicka "DeleteEnvelope" till mottagaren
-                        await Clients.Group(env.ToUserId).SendAsync("DeleteEnvelope", env.EnvelopeId);
+                        // HÄR ÄR FIXEN: Vi använder _hubContext istället för Clients!
+                        // _hubContext lever även efter att denna request är klar.
                         
-                        // Skicka "DeleteEnvelope" till avsändaren (så det försvinner för dig också)
-                        await Clients.Group(env.FromUserId).SendAsync("DeleteEnvelope", env.EnvelopeId);
-                        
+                        await _hubContext.Clients.Group(env.ToUserId).SendAsync("DeleteEnvelope", env.EnvelopeId);
+                        await _hubContext.Clients.Group(env.FromUserId).SendAsync("DeleteEnvelope", env.EnvelopeId);
+
                         Console.WriteLine($"[HUB] Burned message {env.EnvelopeId}");
                     }
                     catch (Exception ex)
